@@ -1,0 +1,135 @@
+name: Tag Action Release
+
+# Bumps the repo's semantic version tag (vX.Y.Z) and moves the matching
+# floating major tag (vX) to the same commit.
+#
+# The bump is resolved in this order:
+#   1. the `bump` input, if provided (patch | minor | major)
+#   2. a `+patch` / `+minor` / `+major` token in the head commit message
+#   3. default: minor
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+      bump:
+        description: 'Which part of the version to increment (patch | minor | major). Leave empty to read it from the commit message.'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Resolve bump
+        id: bump
+        uses: actions/github-script@v9
+        env:
+          BUMP_INPUT: ${{ inputs.bump }}
+          MSG: ${{ github.event.head_commit.message }}
+        with:
+          script: |
+            const input = (process.env.BUMP_INPUT || '').trim().toLowerCase();
+            const msg = (process.env.MSG || '').toLowerCase();
+
+            let bump;
+
+            if (msg.includes('+major')) {
+              bump = 'major';
+            } else if (msg.includes('+minor')) {
+              bump = 'minor';
+            } else if (msg.includes('+patch')) {
+              bump = 'patch';
+            } else {
+              bump = 'minor';
+            }
+
+            core.info(`Resolved bump: ${bump}`);
+            core.setOutput('bump', bump);
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Compute next version
+        id: version
+        env:
+          BUMP: ${{ steps.bump.outputs.bump }}
+        run: |
+          set -euo pipefail
+
+          # Latest existing vX.Y.Z tag (0.0.0 if none yet).
+          latest="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' \
+            | sed 's/^v//' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -n1 || true)"
+          latest="${latest:-0.0.0}"
+          echo "Current version: v${latest}"
+
+          IFS='.' read -r major minor patch <<< "${latest}"
+          case "${BUMP}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+            *) echo "::error::unknown bump '${BUMP}'"; exit 1 ;;
+          esac
+
+          new="v${major}.${minor}.${patch}"
+          major_tag="v${major}"
+          echo "Next version:   ${new}"
+          echo "Floating major: ${major_tag}"
+
+          if git rev-parse -q --verify "refs/tags/${new}" >/dev/null; then
+            echo "::error::tag ${new} already exists"
+            exit 1
+          fi
+
+          {
+            echo "new_tag=${new}"
+            echo "major_tag=${major_tag}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tags
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+          MAJOR_TAG: ${{ steps.version.outputs.major_tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Immutable exact-version tag.
+          git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
+
+          # Floating major tag: (re)create pointing at this commit.
+          git tag -f -a "${MAJOR_TAG}" -m "Update ${MAJOR_TAG} -> ${NEW_TAG}"
+
+          git push origin "refs/tags/${NEW_TAG}"
+          git push origin --force "refs/tags/${MAJOR_TAG}"
+
+      - name: Summary
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+          MAJOR_TAG: ${{ steps.version.outputs.major_tag }}
+        run: |
+          {
+            echo "### Tagged \`${NEW_TAG}\`"
+            echo ""
+            echo "Floating major tag \`${MAJOR_TAG}\` now points at \`${GITHUB_SHA}\`."
+          } >> "$GITHUB_STEP_SUMMARY"

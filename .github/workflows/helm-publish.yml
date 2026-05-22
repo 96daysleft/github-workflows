@@ -1,0 +1,64 @@
+name: Helm Chart Publish
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        required: false
+        default: 'arc-runner-set'
+      chart-path:
+        description: 'Path to the Helm chart directory (e.g. helm/my-chart)'
+        type: string
+        required: true
+      chart-name:
+        description: 'Chart name used when globbing the packaged .tgz (e.g. my-chart)'
+        type: string
+        required: true
+      registry:
+        description: 'OCI registry host'
+        type: string
+        default: 'ghcr.io'
+      tag-name:
+        description: 'Release tag (e.g. v1.2.3). Defaults to the calling workflow ref name.'
+        type: string
+        default: ''
+    secrets:
+      registry-password:
+        description: 'Password/token for registry login (pass secrets.GITHUB_TOKEN from caller)'
+        required: true
+
+jobs:
+  publish-chart:
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.registry-password }}" | helm registry login ${{ inputs.registry }} \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Set chart version from release tag
+        run: |
+          VERSION="${{ inputs.tag-name != '' && inputs.tag-name || github.ref_name }}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version:.*/version: ${VERSION}/" ${{ inputs.chart-path }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${VERSION}\"/" ${{ inputs.chart-path }}/Chart.yaml
+
+      - name: Package chart
+        run: helm package ${{ inputs.chart-path }} --destination /tmp/helm-output
+
+      - name: Push chart to GHCR
+        run: |
+          helm push /tmp/helm-output/${{ inputs.chart-name }}-*.tgz \
+            oci://${{ inputs.registry }}/${{ github.repository_owner }}

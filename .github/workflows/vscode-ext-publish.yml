@@ -1,0 +1,93 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      tag:
+        description: 'Release tag whose .vsix asset should be published'
+        required: true
+        type: string
+      extension-name:
+        description: ''
+        required: true
+        type: string
+      publish-vsx:
+        description: 'R'
+        required: true
+        type: string
+      publish-vsce:
+        description: ''
+        required: true
+        type: string
+    secrets:
+      VSCE_PAT:
+        required: false
+      OVSX_PAT:
+        required: false
+
+permissions:
+  contents: read  # download release assets
+
+jobs:
+  publish:
+    environment: release
+    env:
+      EXTENSION_NAME: ${{ inputs.extension-name }}
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download .vsix from the GitHub Release
+        id: download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh release download "${RELEASE_TAG}" \
+            --repo "${{ github.repository }}" \
+            --pattern "${EXTENSION_NAME}"
+          ls -l "${EXTENSION_NAME}"
+
+      # Both publish steps run whenever the download succeeded; each is independent,
+      # so a failure in one marketplace does not stop the other. The job is failed
+      # afterwards by "Report publish results" if any attempted publish failed.
+      - name: Publish to VS Code Marketplace
+        id: publish_vsce
+        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsce == 'true' }}
+        continue-on-error: true
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce publish --packagePath "${EXTENSION_NAME}" -p "${VSCE_PAT}"
+
+      - name: Publish to Open VSX
+        id: publish_ovsx
+        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsx == 'true' }}
+        continue-on-error: true
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx publish "${EXTENSION_NAME}" -p "${OVSX_PAT}"
+
+      - name: Report publish results
+        if: ${{ !cancelled() && steps.download.outcome == 'success' }}
+        run: |
+          echo "VS Code Marketplace: ${{ steps.publish_vsce.outcome }}"
+          echo "Open VSX:            ${{ steps.publish_ovsx.outcome }}"
+          if [ "${{ steps.publish_vsce.outcome }}" = "failure" ] || [ "${{ steps.publish_ovsx.outcome }}" = "failure" ]; then
+            echo "::error::One or more publish steps failed"
+            exit 1
+          fi
