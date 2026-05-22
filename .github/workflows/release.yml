@@ -1,0 +1,23 @@
+name: Release
+
+# On every merge/push to main, cut a new release tag by calling the
+# reusable action-tag-release workflow. That workflow resolves the bump
+# from a +patch / +minor / +major token in the commit message, defaulting
+# to minor.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: ./.github/workflows/action-tag-release.yml
+    permissions:
+      contents: write
