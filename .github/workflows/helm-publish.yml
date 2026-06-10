@@ -1,4 +1,4 @@
-name: Reusable Helm Chart Publish
+name: Helm Chart Publish
 
 on:
   workflow_call:
