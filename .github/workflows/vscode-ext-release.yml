@@ -35,6 +35,7 @@ on:
 
 permissions:
   id-token: write
+  attestations: write
   contents: write
   pull-requests: write
   packages: write
@@ -140,7 +141,7 @@ jobs:
           output-file: ${{ env.SBOM_NAME }}
 
       - name: Attest SBOM
-        uses: actions/attest-sbom@v4
+        uses: actions/attest@v4
         with:
           subject-path: ${{ env.EXTENSION_NAME }}
           sbom-path: ${{ env.SBOM_NAME }}
