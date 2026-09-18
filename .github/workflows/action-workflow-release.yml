@@ -1,0 +1,50 @@
+name: Action Workflow Release
+
+# Moves a static release tag (default: `release`) to the triggering commit.
+# Consumers reference the workflows/actions at `@release`.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+      release_tag:
+        description: 'Name of the static tag that is moved to each release'
+        type: string
+        required: false
+        default: 'release'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Move release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -f -a "${RELEASE_TAG}" -m "Update ${RELEASE_TAG} -> ${GITHUB_SHA}"
+          git push origin --force "refs/tags/${RELEASE_TAG}"
+
+      - name: Summary
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          echo "Moving tag \`${RELEASE_TAG}\` now points at \`${GITHUB_SHA}\`." >> "$GITHUB_STEP_SUMMARY"
