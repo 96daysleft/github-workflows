@@ -171,6 +171,4 @@ jobs:
       extension-name: ${{ inputs.extension-name }}
       publish-vsce: ${{ inputs.publish-vsce }}
       publish-vsx: ${{ inputs.publish-vsx }}
-    secrets:
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    secrets: inherit
