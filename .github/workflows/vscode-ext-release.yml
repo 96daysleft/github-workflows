@@ -43,7 +43,6 @@ permissions:
 
 jobs:
   release:
-    environment: release
     runs-on: ${{ inputs.runner }}
     env:
       EXTENSION_NAME: ${{ inputs.extension-name }}

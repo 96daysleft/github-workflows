@@ -77,7 +77,7 @@ jobs:
         if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsx == 'true' }}
         continue-on-error: true
         env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+          OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
         run: npx --yes ovsx publish "${EXTENSION_NAME}" -p "${OVSX_PAT}"
 
       - name: Report publish results
