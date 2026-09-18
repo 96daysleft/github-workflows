@@ -25,13 +25,6 @@ on:
         required: false
         type: string
         default: 'false'
-    secrets:
-      VSCE_PAT:
-        description: 'VS Code Marketplace personal access token'
-        required: false
-      OVSX_PAT:
-        description: 'Open VSX personal access token'
-        required: false
 
 permissions:
   contents: read  # download release assets
