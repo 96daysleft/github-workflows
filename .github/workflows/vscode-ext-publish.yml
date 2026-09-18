@@ -61,24 +61,78 @@ jobs:
             --pattern "${EXTENSION_NAME}"
           ls -l "${EXTENSION_NAME}"
 
+      # Lets a re-run skip a marketplace that already has this version.
+      - name: Check if already published
+        id: exists
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const { publisher, name, version } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const id = `${publisher}.${name}`;
+
+            // Open VSX: 200 if the version exists, 404 if not.
+            try {
+              const res = await fetch(`https://open-vsx.org/api/${publisher}/${name}/${version}`);
+              if (res.ok) {
+                core.setOutput('vsx', 'true');
+                core.info(`Open VSX already has ${id}@${version}`);
+              } else if (res.status !== 404) {
+                core.warning(`Open VSX check returned ${res.status}; assuming not published`);
+              }
+            } catch (err) {
+              core.warning(`Open VSX check failed: ${err.message}; assuming not published`);
+            }
+
+            // VS Code Marketplace: query the public gallery API (flag 1 = include versions).
+            try {
+              const res = await fetch('https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery', {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json;api-version=3.0-preview.1',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  filters: [{ criteria: [{ filterType: 7, value: id }] }],
+                  flags: 1,
+                }),
+              });
+              if (!res.ok) {
+                core.warning(`Marketplace check returned ${res.status}; assuming not published`);
+              } else {
+                const data = await res.json();
+                const versions = data.results?.[0]?.extensions?.[0]?.versions ?? [];
+                if (versions.some((v) => v.version === version)) {
+                  core.setOutput('vsce', 'true');
+                  core.info(`VS Code Marketplace already has ${id}@${version}`);
+                }
+              }
+            } catch (err) {
+              core.warning(`Marketplace check failed: ${err.message}; assuming not published`);
+            }
+
       # Both publish steps run whenever the download succeeded; each is independent,
       # so a failure in one marketplace does not stop the other. The job is failed
       # afterwards by "Report publish results" if any attempted publish failed.
       - name: Publish to VS Code Marketplace
         id: publish_vsce
-        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsce == 'true' }}
+        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsce == 'true' && steps.exists.outputs.vsce != 'true' }}
         continue-on-error: true
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --yes @vscode/vsce publish --packagePath "${EXTENSION_NAME}" -p "${VSCE_PAT}"
+        run: |
+          : "${VSCE_PAT:?VSCE_PAT is empty - check the release environment/secret}"
+          npx --yes @vscode/vsce publish --packagePath "${EXTENSION_NAME}" -p "${VSCE_PAT}"
 
       - name: Publish to Open VSX
         id: publish_ovsx
-        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsx == 'true' }}
+        if: ${{ !cancelled() && steps.download.outcome == 'success' && inputs.publish-vsx == 'true' && steps.exists.outputs.vsx != 'true' }}
         continue-on-error: true
         env:
           OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: npx --yes ovsx publish "${EXTENSION_NAME}" -p "${OVSX_PAT}"
+        run: |
+          : "${OVSX_PAT:?OPEN_VSX_TOKEN is empty - check the release environment/secret}"
+          npx --yes ovsx publish "${EXTENSION_NAME}" -p "${OVSX_PAT}"
 
       - name: Report publish results
         if: ${{ !cancelled() && steps.download.outcome == 'success' }}
