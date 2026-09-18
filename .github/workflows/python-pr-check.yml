@@ -1,0 +1,42 @@
+name: Python PR Check
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      test-dependencies:
+        description: 'Extra pip packages to install for the test run'
+        type: string
+        default: 'pytest pytest-asyncio pytest-cov'
+      pytest-args:
+        description: 'Additional arguments passed to pytest'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: '.python-version' 
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install ${{ inputs.test-dependencies }}
+
+      - name: Run pytest
+        run: pytest ${{ inputs.pytest-args }}

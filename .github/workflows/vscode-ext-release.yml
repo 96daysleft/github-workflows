@@ -162,7 +162,7 @@ jobs:
 
   publish:
     needs: release
-    uses: ./.github/workflows/vscode-ext-publish.yml
+    uses: 96daysleft/github-workflows/.github/workflows/vscode-ext-publish.yml@release
     with:
       tag: ${{ needs.release.outputs.version }}
       runner: ${{ inputs.runner }}
