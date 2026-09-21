@@ -31,6 +31,8 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout
@@ -57,6 +59,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: ${{ inputs.context }}
@@ -65,3 +68,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ inputs.registry }}/${{ inputs.image-name != '' && inputs.image-name || github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
