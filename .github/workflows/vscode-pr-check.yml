@@ -85,7 +85,7 @@ jobs:
       - name: Fetch Anthropic OIDC token
         if: ${{ inputs.run-pr-agent == true}}
         id: anthropic_token
-        uses: ./.github/actions/anthropic-oidc-token
+        uses: 96daysleft/github-workflows/.github/actions/anthropic-oidc-token@release
         with:
           federation-rule-id: ${{ secrets.FEDERATION_RULE_ID }}
           organization-id: ${{ secrets.ORGANIZATION_ID }}
