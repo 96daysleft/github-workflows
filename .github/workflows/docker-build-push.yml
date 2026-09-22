@@ -20,6 +20,26 @@ on:
         description: 'Docker build context path'
         type: string
         default: '.'
+      dockerfile:
+        description: 'Path to the Dockerfile'
+        type: string
+        default: ''
+      platforms:
+        description: 'Comma-separated list of target platforms (e.g. linux/amd64,linux/arm64)'
+        type: string
+        default: ''
+      build-args:
+        description: 'Newline-separated build-time variables (KEY=VALUE), passed to build-push-action build-args'
+        type: string
+        default: ''
+      build-contexts:
+        description: 'Newline-separated additional build contexts (NAME=PATH)'
+        type: string
+        default: ''
+      target:
+        description: 'Target build stage to build'
+        type: string
+        default: ''
     secrets:
       registry-password:
         description: 'Password/token for registry login (pass secrets.GITHUB_TOKEN from caller)'
@@ -63,6 +83,11 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile != '' && inputs.dockerfile || null }}
+          platforms: ${{ inputs.platforms != '' && inputs.platforms || null }}
+          target: ${{ inputs.target != '' && inputs.target || null }}
+          build-args: ${{ inputs.build-args }}
+          build-contexts: ${{ inputs.build-contexts }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
