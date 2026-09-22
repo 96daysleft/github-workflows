@@ -19,6 +19,19 @@ on:
         description: ''
         type: boolean
         default: false
+    secrets:
+      FEDERATION_RULE_ID:
+        description: 'Anthropic federation rule ID'
+        required: false
+      ORGANIZATION_ID:
+        description: 'Anthropic organization ID'
+        required: false
+      SERVICE_ACCOUNT_ID:
+        description: 'Anthropic service account ID'
+        required: false
+      WORKSPACE_ID:
+        description: 'Anthropic workspace ID'
+        required: false
 
 permissions:
   id-token: write
