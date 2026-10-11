@@ -39,7 +39,7 @@ workflows:
         - '96daysleft/github-workflows@release'
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.0.0'
-        - 'the-pr-agent/pr-agent@v0.45.0'
+        - 'the-pr-agent/pr-agent@v0.46.0'
     '.github/workflows/vscode-ext-publish.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/github-script@v9.0.0'
@@ -55,7 +55,7 @@ workflows:
         - '96daysleft/github-workflows@release'
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
-        - 'the-pr-agent/pr-agent@v0.45.0'
+        - 'the-pr-agent/pr-agent@v0.46.0'
 dependencies:
     '96daysleft/github-workflows@release':
         ref: 'release'
@@ -146,8 +146,8 @@ dependencies:
         commit: 'sha1-efb35369e0ad2afab669f228072c1b0d510eae64'
         owner_id: 2242
         repo_id: 204253808
-    'the-pr-agent/pr-agent@v0.45.0':
-        ref: 'v0.45.0'
-        commit: 'sha1-aaa29921481aaa171f8b62adeeaa4fbffb3ee7e3'
+    'the-pr-agent/pr-agent@v0.46.0':
+        ref: 'v0.46.0'
+        commit: 'sha1-1d01f24f455bb879c1d9c557ad7de3d72dcc7975'
         owner_id: 264152072
         repo_id: 662766482
