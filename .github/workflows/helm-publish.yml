@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Helm Chart Publish
 
 on:
@@ -20,6 +22,10 @@ on:
         description: 'OCI registry host'
         type: string
         default: 'ghcr.io'
+      chart-repository:
+        description: 'Repository path under the owner that charts are pushed to (oci://<registry>/<owner>/<chart-repository>). Keeps charts separate from same-named images.'
+        type: string
+        default: 'charts'
       tag-name:
         description: 'Release tag (e.g. v1.2.3). Defaults to the calling workflow ref name.'
         type: string
@@ -37,10 +43,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Install Helm
-        uses: azure/setup-helm@v5
+        uses: azure/setup-helm@v5.0.1
 
       - name: Log in to GitHub Container Registry
         env:
@@ -65,4 +71,4 @@ jobs:
       - name: Push chart to GHCR
         run: |
           helm push /tmp/helm-output/${{ inputs.chart-name }}-*.tgz \
-            oci://${{ inputs.registry }}/${{ github.repository_owner }}
+            oci://${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.chart-repository }}

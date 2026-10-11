@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Publish
 
 on:
@@ -37,12 +39,12 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.nvmrc'
 
@@ -64,7 +66,7 @@ jobs:
       # Lets a re-run skip a marketplace that already has this version.
       - name: Check if already published
         id: exists
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             const fs = require('fs');

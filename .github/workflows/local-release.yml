@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Release
 
 # On every merge/push to main, cut a new release tag by calling the
