@@ -1,0 +1,48 @@
+name: Helm Lint
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      chart-path:
+        description: 'Path to the Helm chart directory (e.g. helm/my-chart)'
+        type: string
+        required: true
+      values-files:
+        description: 'Newline-separated values files to lint the chart with (passed as -f)'
+        type: string
+        default: ''
+      strict:
+        description: 'Fail on lint warnings'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Lint chart
+        env:
+          CHART_PATH: ${{ inputs.chart-path }}
+          VALUES_FILES: ${{ inputs.values-files }}
+          STRICT: ${{ inputs.strict }}
+        run: |
+          set -euo pipefail
+          args=()
+          while IFS= read -r f; do
+            [ -n "$f" ] && args+=(-f "$f")
+          done <<< "$VALUES_FILES"
+          [ "$STRICT" = "true" ] && args+=(--strict)
+          helm lint "$CHART_PATH" "${args[@]}"

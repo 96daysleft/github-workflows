@@ -1,0 +1,97 @@
+name: Python Package Check
+
+# Builds the sdist and wheel, installs the wheel and checks it is usable:
+# every console-script entry point must load and be a plain (non-async)
+# callable, and any listed modules must import from the installed wheel.
+# Catches packaging mistakes (missing modules, broken entry points) that
+# tests against an editable install don't.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      import-modules:
+        description: 'Space-separated modules that must import from the installed wheel (e.g. "main src.service")'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # setuptools-scm needs the tags
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: '.python-version'
+          cache: pip
+          cache-dependency-path: |
+            **/requirements*.txt
+            **/pyproject.toml
+
+      - name: Build Python package
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Install wheel
+        run: pip install dist/*.whl
+
+      # Run outside the checkout so imports resolve from the installed wheel,
+      # not the source tree.
+      - name: Check console-script entry points
+        working-directory: ${{ runner.temp }}
+        env:
+          DIST_DIR: ${{ github.workspace }}/dist
+        shell: python
+        run: |
+          import importlib.metadata as md
+          import inspect
+          import os
+          import pathlib
+          import shutil
+          import sys
+
+          wheel = next(pathlib.Path(os.environ["DIST_DIR"]).glob("*.whl"))
+          dist = md.distribution(wheel.name.split("-")[0])
+          scripts = [ep for ep in dist.entry_points if ep.group == "console_scripts"]
+          failed = False
+          for ep in scripts:
+              try:
+                  target = ep.load()
+              except Exception as e:
+                  print(f"::error::{ep.name} -> {ep.value} failed to load: {e!r}")
+                  failed = True
+                  continue
+              if not callable(target) or inspect.iscoroutinefunction(target):
+                  print(f"::error::{ep.name} -> {ep.value} must be a plain callable (async functions return a coroutine and never run)")
+                  failed = True
+              elif shutil.which(ep.name) is None:
+                  print(f"::error::{ep.name} is not on PATH after install")
+                  failed = True
+              else:
+                  print(f"ok {ep.name} -> {ep.value}")
+          if not scripts:
+              print("No console scripts defined")
+          sys.exit(1 if failed else 0)
+
+      - name: Check module imports
+        if: ${{ inputs.import-modules != '' }}
+        working-directory: ${{ runner.temp }}
+        env:
+          MODULES: ${{ inputs.import-modules }}
+        run: |
+          for m in $MODULES; do
+            python -c 'import importlib, sys; importlib.import_module(sys.argv[1])' "$m"
+            echo "ok import $m"
+          done

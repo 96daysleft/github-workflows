@@ -1,0 +1,62 @@
+name: Docker Build
+
+# Build-only counterpart to docker-build-push.yml for PR checks: no registry
+# login, no push, read-only permissions.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      context:
+        description: 'Docker build context path'
+        type: string
+        default: '.'
+      dockerfile:
+        description: 'Path to the Dockerfile'
+        type: string
+        default: ''
+      platforms:
+        description: 'Comma-separated list of target platforms (e.g. linux/amd64,linux/arm64)'
+        type: string
+        default: ''
+      build-args:
+        description: 'Newline-separated build-time variables (KEY=VALUE), passed to build-push-action build-args'
+        type: string
+        default: ''
+      build-contexts:
+        description: 'Newline-separated additional build contexts (NAME=PATH)'
+        type: string
+        default: ''
+      target:
+        description: 'Target build stage to build'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile != '' && inputs.dockerfile || null }}
+          platforms: ${{ inputs.platforms != '' && inputs.platforms || null }}
+          target: ${{ inputs.target != '' && inputs.target || null }}
+          build-args: ${{ inputs.build-args }}
+          build-contexts: ${{ inputs.build-contexts }}
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
