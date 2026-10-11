@@ -64,7 +64,7 @@ jobs:
       # Lets a re-run skip a marketplace that already has this version.
       - name: Check if already published
         id: exists
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
