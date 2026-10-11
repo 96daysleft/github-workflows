@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Helm Chart Publish
 
 on:
@@ -41,10 +43,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Install Helm
-        uses: azure/setup-helm@v5
+        uses: azure/setup-helm@v5.0.1
 
       - name: Log in to GitHub Container Registry
         env:

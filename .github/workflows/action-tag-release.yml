@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Tag Action Release
 
 # Bumps the repo's semantic version tag (vX.Y.Z) and moves the matching
@@ -35,7 +37,7 @@ jobs:
     steps:
       - name: Resolve bump
         id: bump
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         env:
           BUMP_INPUT: ${{ inputs.bump }}
           MSG: ${{ github.event.head_commit.message }}
@@ -60,7 +62,7 @@ jobs:
             core.setOutput('bump', bump);
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true

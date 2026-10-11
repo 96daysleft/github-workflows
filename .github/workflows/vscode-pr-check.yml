@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Vscode PR Check
 
 on:
@@ -36,13 +38,13 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           # Check out the PR branch itself (not the detached merge ref) so we can push back.
           ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.nvmrc'
           cache: npm
@@ -52,6 +54,8 @@ jobs:
 
       - name: Commit package-lock.json if it changed
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           if git diff --quiet -- package-lock.json; then
             echo "package-lock.json unchanged"
@@ -62,7 +66,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
           git commit -m "chore: update package-lock.json [skip ci]"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          git push origin "HEAD:${BRANCH}"
 
       - name: Run compile
         run: npm run compile
@@ -94,7 +98,7 @@ jobs:
 
       - name: PR Agent action step
         if: ${{ inputs.run-pr-agent == true}}
-        uses: the-pr-agent/pr-agent@aaa29921481aaa171f8b62adeeaa4fbffb3ee7e3  # main as of 2026-09-09
+        uses: the-pr-agent/pr-agent@v0.45.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           config.model: "anthropic/claude-haiku-4-5-20251001"

@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Action Workflow Release
 
 # Moves a static release tag (default: `release`) to the triggering commit.
@@ -29,7 +31,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Move release tag
         env:

@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Vscode Extension Release
 
 on:
@@ -51,7 +53,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Verify input
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         env:
           VERSION_TYPE: ${{ inputs.version-type }}
         with:
@@ -66,12 +68,12 @@ jobs:
             }
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.nvmrc'
 
@@ -101,15 +103,15 @@ jobs:
         env:
           CHANGE_LOG_FILE: "CHANGELOG.md"
         run: |
-          npx auto-changelog --commit-limit false -p --output ${CHANGE_LOG_FILE}
-          git add ${CHANGE_LOG_FILE}
+          npx auto-changelog --commit-limit false -p --output "${CHANGE_LOG_FILE}"
+          git add "${CHANGE_LOG_FILE}"
 
       - name: Push commit and tag
         run: |
           git commit -m "Release version ${VERSION}"
           git push
-          git tag ${VERSION}
-          git push origin ${VERSION}
+          git tag "${VERSION}"
+          git push origin "${VERSION}"
 
       - name: Lint
         run: npm run lint
@@ -133,20 +135,20 @@ jobs:
         run: npx vsce package --out "${EXTENSION_NAME}"
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@v0.24.0
         with:
           path: .
           format: cyclonedx-json
           output-file: ${{ env.SBOM_NAME }}
 
       - name: Attest SBOM
-        uses: actions/attest@v4
+        uses: actions/attest@v4.2.2
         with:
           subject-path: ${{ env.EXTENSION_NAME }}
           sbom-path: ${{ env.SBOM_NAME }}
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v4.2.2
         with:
           subject-path: ${{ env.EXTENSION_NAME }}
 

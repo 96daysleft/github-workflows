@@ -1,0 +1,24 @@
+# This workflow is managed by gh actions-lock.
+
+name: PR Check
+
+# Lints this repo's own workflows (syntax, expressions, reusable-workflow
+# inputs, shellcheck on run: scripts) on every pull request.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.7
+        with:
+          args: -color

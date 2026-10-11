@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Python PR Check
 
 on:
@@ -44,10 +46,10 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: '.python-version' 
           cache: pip
@@ -73,7 +75,7 @@ jobs:
 
       - name: PR Agent action step
         if: ${{ inputs.run-pr-agent == true}}
-        uses: the-pr-agent/pr-agent@aaa29921481aaa171f8b62adeeaa4fbffb3ee7e3  # main as of 2026-09-09
+        uses: the-pr-agent/pr-agent@v0.45.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           config.model: "anthropic/claude-haiku-4-5-20251001"

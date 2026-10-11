@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Python Package Check
 
 # Builds the sdist and wheel, installs the wheel and checks it is usable:
@@ -26,12 +28,12 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0   # setuptools-scm needs the tags
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: '.python-version'
           cache: pip
