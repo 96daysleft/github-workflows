@@ -98,7 +98,7 @@ jobs:
 
       - name: PR Agent action step
         if: ${{ inputs.run-pr-agent == true}}
-        uses: the-pr-agent/pr-agent@v0.46.0
+        uses: the-pr-agent/pr-agent@v0.48.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           config.model: "anthropic/claude-haiku-4-5-20251001"
