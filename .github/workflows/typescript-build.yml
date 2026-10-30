@@ -1,0 +1,92 @@
+# This workflow is managed by gh actions-lock.
+
+name: typescript-build
+
+# Builds a TypeScript project (action or general code) with `npm run build`.
+# Optionally verifies the committed build output is up to date (for JS/TS
+# actions that commit dist/) and uploads the build output as an artifact.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label(s) for the workflow jobs'
+        type: string
+        default: 'ubuntu-latest'
+      working-directory:
+        description: 'Directory containing package.json'
+        type: string
+        default: '.'
+      node-version-file:
+        description: 'File to read the Node.js version from (relative to working-directory)'
+        type: string
+        default: '.nvmrc'
+      build-script:
+        description: 'npm script to run for the build'
+        type: string
+        default: 'build'
+      output-path:
+        description: 'Build output path (relative to working-directory)'
+        type: string
+        default: 'dist'
+      check-dist:
+        description: 'Fail if the build output differs from what is committed (for actions that commit dist/)'
+        type: boolean
+        default: false
+      upload-artifact:
+        description: 'Upload the build output as a workflow artifact'
+        type: boolean
+        default: false
+      artifact-name:
+        description: 'Name of the uploaded artifact'
+        type: string
+        default: 'dist'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: ${{ inputs.working-directory }}/${{ inputs.node-version-file }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          BUILD_SCRIPT: ${{ inputs.build-script }}
+        run: npm run "${BUILD_SCRIPT}"
+
+      - name: Check build output is up to date
+        if: ${{ inputs.check-dist }}
+        env:
+          OUTPUT_PATH: ${{ inputs.output-path }}
+        run: |
+          if [ -n "$(git status --porcelain -- "${OUTPUT_PATH}")" ]; then
+            echo "::error::${OUTPUT_PATH} is out of date. Run 'npm run build' and commit the result."
+            git status --porcelain -- "${OUTPUT_PATH}"
+            git diff --stat -- "${OUTPUT_PATH}"
+            exit 1
+          fi
+          echo "${OUTPUT_PATH} is up to date"
+
+      - name: Upload build output
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.working-directory }}/${{ inputs.output-path }}
+          if-no-files-found: error
