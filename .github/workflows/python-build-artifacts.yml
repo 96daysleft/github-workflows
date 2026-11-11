@@ -29,6 +29,10 @@ jobs:
     permissions:
       packages: write
       contents: write
+      id-token: write      # OIDC token for attestation signing
+      attestations: write  # SBOM + build provenance attestations
+    env:
+      SBOM_NAME: sbom.cdx.json
 
     steps:
       - name: Checkout
@@ -74,10 +78,31 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-      - name: Create a Release
-        uses: softprops/action-gh-release@v3.0.3
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0.24.3
         with:
-          tag_name: ${{ env.FULL_TAG }}
-          name: ${{ env.FULL_TAG }}
-          generate_release_notes: true
-          files: dist/*
+          path: .
+          format: cyclonedx-json
+          output-file: ${{ env.SBOM_NAME }}
+
+      - name: Attest SBOM
+        uses: actions/attest@v4.2.2
+        with:
+          subject-path: dist/*
+          sbom-path: ${{ env.SBOM_NAME }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-path: dist/*
+
+      - name: Create GitHub Release with assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ env.FULL_TAG }}
+        run: |
+          gh release create "${RELEASE_TAG}" \
+            --title "${RELEASE_TAG}" \
+            --generate-notes \
+            dist/* \
+            "${SBOM_NAME}"
