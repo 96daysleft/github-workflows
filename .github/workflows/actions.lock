@@ -28,17 +28,19 @@ workflows:
     '.github/workflows/local-pr.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/python-build-artifacts.yml':
+        - 'actions/attest-build-provenance@v4.2.2'
+        - 'actions/attest@v4.2.2'
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-python@v7.0.0'
+        - 'actions/setup-python@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'softprops/action-gh-release@v3.0.3'
+        - 'anchore/sbom-action@v0.24.3'
     '.github/workflows/python-package-check.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-python@v7.0.0'
+        - 'actions/setup-python@v7.1.0'
     '.github/workflows/python-pr-check.yml':
         - '96daysleft/github-workflows@release'
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-python@v7.0.0'
+        - 'actions/setup-python@v7.1.0'
         - 'the-pr-agent/pr-agent@v0.48.0'
     '.github/workflows/typescript-build.yml':
         - 'actions/checkout@v7.0.1'
@@ -105,9 +107,9 @@ dependencies:
         commit: 'sha1-949feb2413d6458794dcd2491c4babbbce0c15c1'
         owner_id: 44036562
         repo_id: 189476904
-    'actions/setup-python@v7.0.0':
-        ref: 'v7.0.0'
-        commit: 'sha1-5fda3b95a4ea91299a34e894583c3862153e4b97'
+    'actions/setup-python@v7.1.0':
+        ref: 'v7.1.0'
+        commit: 'sha1-6d4fd22b20465ccc0f7354476588e8df7c9ca0e0'
         owner_id: 44036562
         repo_id: 192625525
     'actions/upload-artifact@v7.0.2':
@@ -145,11 +147,6 @@ dependencies:
         commit: 'sha1-f87e5991a6d7451dcb8d9637bfbc97413f497069'
         owner_id: 5429470
         repo_id: 288485773
-    'softprops/action-gh-release@v3.0.3':
-        ref: 'v3.0.3'
-        commit: 'sha1-efb35369e0ad2afab669f228072c1b0d510eae64'
-        owner_id: 2242
-        repo_id: 204253808
     'the-pr-agent/pr-agent@v0.48.0':
         ref: 'v0.48.0'
         commit: 'sha1-981344be2755e303df501e18e3f60b848a188a80'
