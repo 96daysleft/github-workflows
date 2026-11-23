@@ -79,7 +79,7 @@ jobs:
           path: dist/
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0.24.3
+        uses: anchore/sbom-action@v0.24.4
         with:
           path: .
           format: cyclonedx-json
